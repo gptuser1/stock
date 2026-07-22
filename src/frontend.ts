@@ -114,14 +114,15 @@ input, select, button { font-family: inherit; }
 .token-bar .token-group input:focus { border-color: var(--primary); }
 .token-bar .token-group .btn-verify {
   padding: 9px 28px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
-  cursor: pointer; background: var(--primary); color: #fff; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0;
+  cursor: pointer; background: var(--primary); color: #fff; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; min-width: 88px;
 }
 .token-bar .token-group .btn-verify:hover:not(:disabled) { background: var(--primary-hover); }
 .token-bar .token-group .btn-verify:disabled { opacity: 0.6; cursor: not-allowed; }
-.token-status { font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 20px; background: var(--tag-bg); transition: background 0.3s; flex-shrink: 0; }
-.token-status.ok { background: var(--success-bg); color: var(--success-text); }
-.token-status.err { background: var(--error-bg); color: var(--danger); }
-.token-status.loading { background: var(--loading-bg); color: var(--primary); }
+.token-bar .token-group .btn-verify.ok { background: var(--success-text); }
+.token-bar .token-group .btn-verify.ok:hover:not(:disabled) { background: var(--success-text); filter: brightness(0.92); }
+.token-bar .token-group .btn-verify.err { background: var(--danger); }
+.token-bar .token-group .btn-verify.err:hover:not(:disabled) { background: var(--danger-hover); }
+.token-bar .token-group .btn-verify.loading { background: var(--primary); opacity: 0.75; }
 
 /* ─── 容器 ─── */
 .container { max-width: 920px; margin: 0 auto; padding: 24px 20px 60px; display: none; }
@@ -308,9 +309,8 @@ input, select, button { font-family: inherit; }
   .token-bar { padding: 12px 16px; gap: 8px; }
   .token-bar .logo { font-size: 17px; }
   .token-bar .token-group { min-width: 0; }
-  .token-status { width: 100%; text-align: center; }
   .token-bar .token-group input { font-size: 13px; padding: 8px 10px; }
-  .token-bar .token-group .btn-verify { padding: 8px 14px; font-size: 13px; }
+  .token-bar .token-group .btn-verify { padding: 8px 14px; font-size: 13px; min-width: 70px; }
   .container { padding: 16px 12px 40px; }
   .header h1 { font-size: 20px; }
   .header { flex-direction: column; align-items: stretch; }
@@ -362,7 +362,6 @@ input, select, button { font-family: inherit; }
     <input type="password" id="tokenInput" placeholder="输入系统令牌访问" spellcheck="false">
     <button class="btn-verify" id="verifyBtn">验证</button>
   </div>
-  <span class="token-status" id="tokenStatus"></span>
 </div>
 
 <!-- 主内容 -->
@@ -453,7 +452,7 @@ let fundsCache = [];
 const $ = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
 
-const tokenInput = $('tokenInput'), verifyBtn = $('verifyBtn'), tokenStatus = $('tokenStatus');
+const tokenInput = $('tokenInput'), verifyBtn = $('verifyBtn');
 const mainContent = $('mainContent'), fundList = $('fundList');
 const refreshBtn = $('refreshBtn'), refreshStatus = $('refreshStatus');
 const addFundBtn = $('addFundBtn');
@@ -531,34 +530,34 @@ detailOverlay.addEventListener('click', e => { if (e.target === detailOverlay) d
 
 async function verifyToken() {
   token = tokenInput.value.trim();
-  if (!token) { setTokenStatus('请输入令牌', 'err'); tokenInput.focus(); return; }
-  setTokenStatus('验证中…', 'loading');
-  setLoading(verifyBtn, true, '验证中…');
+  if (!token) { setBtnStatus('请输入令牌', 'err'); tokenInput.focus(); return; }
+  setBtnStatus('验证中…', 'loading', true);
   try {
     const res = await fetch('/api/verify', { headers: { 'Authorization': 'Bearer ' + token } });
     if (res.ok) {
       localStorage.setItem('fv_token', token);
-      setTokenStatus('✓ 已授权', 'ok');
+      setBtnStatus('✓ 已授权', 'ok');
       mainContent.classList.add('active');
       loadFunds();
     } else if (res.status === 401) {
-      setTokenStatus('✗ 令牌无效', 'err');
+      setBtnStatus('✗ 无效', 'err');
       localStorage.removeItem('fv_token');
       mainContent.classList.remove('active');
       toast('令牌无效，请检查后重试', 'error');
     } else {
-      setTokenStatus('✗ 验证失败', 'err');
+      setBtnStatus('✗ 失败', 'err');
       toast('验证请求失败，请重试', 'error');
     }
   } catch {
-    setTokenStatus('✗ 网络错误', 'err');
+    setBtnStatus('✗ 网络错误', 'err');
     toast('网络请求失败，请检查连接', 'error');
-  } finally { setLoading(verifyBtn, false); }
+  }
 }
 
-function setTokenStatus(text, cls) {
-  tokenStatus.textContent = text;
-  tokenStatus.className = 'token-status' + (cls ? ' ' + cls : '');
+function setBtnStatus(text, cls, disabled) {
+  verifyBtn.textContent = text;
+  verifyBtn.className = 'btn-verify' + (cls ? ' ' + cls : '');
+  verifyBtn.disabled = !!disabled;
 }
 
 async function api(url, options) {
@@ -567,7 +566,7 @@ async function api(url, options) {
     headers: { ...options?.headers, 'Authorization': 'Bearer ' + token },
   });
   if (res.status === 401) {
-    setTokenStatus('✗ 令牌已失效', 'err');
+    setBtnStatus('✗ 已失效', 'err');
     mainContent.classList.remove('active');
     localStorage.removeItem('fv_token');
     toast('令牌已失效，请重新验证', 'error');
