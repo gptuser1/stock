@@ -64,7 +64,73 @@ function toYahooSymbol(code: string, market: string): string | null {
   if (market === 'US') return code;
   if (market === 'KR') return `${code}.KS`;
   if (market === 'TW') return `${code}.TW`;
+  if (market === 'JP') return `${code}.T`; // 东京证券交易所
   return null;
+}
+
+// ─── 交易所交易时间状态判断 ───
+interface MarketSession {
+  tz: string;
+  sessions: [number, number][]; // 每段交易时段 [startHM, endHM]，如 930 表示 09:30
+}
+
+function getMarketInfo(market: string): MarketSession | null {
+  switch (market) {
+    case 'A':  return { tz: 'Asia/Shanghai',    sessions: [[930, 1130], [1300, 1500]] };
+    case 'HK': return { tz: 'Asia/Hong_Kong',   sessions: [[930, 1200], [1300, 1600]] };
+    case 'US': return { tz: 'America/New_York', sessions: [[930, 1600]] };
+    case 'KR': return { tz: 'Asia/Seoul',       sessions: [[900, 1530]] };
+    case 'TW': return { tz: 'Asia/Taipei',      sessions: [[900, 1330]] };
+    case 'JP': return { tz: 'Asia/Tokyo',       sessions: [[900, 1130], [1230, 1500]] };
+    default:   return null;
+  }
+}
+
+export interface MarketStatus {
+  status: 'open' | 'closed' | 'pre' | 'break' | 'weekend' | 'unknown';
+  label: string;
+}
+
+export function getMarketStatus(market: string, now: Date = new Date()): MarketStatus {
+  const info = getMarketInfo(market);
+  if (!info) return { status: 'unknown', label: '未知' };
+
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: info.tz,
+    hour12: false,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const parts = fmt.formatToParts(now);
+  let weekday = '', hour = 0, minute = 0;
+  for (const p of parts) {
+    if (p.type === 'weekday') weekday = p.value;
+    else if (p.type === 'hour') hour = parseInt(p.value, 10);
+    else if (p.type === 'minute') minute = parseInt(p.value, 10);
+  }
+  if (hour === 24) hour = 0;
+  const hm = hour * 100 + minute;
+
+  if (weekday === 'Sat' || weekday === 'Sun') {
+    return { status: 'weekend', label: '周末休市' };
+  }
+
+  let inSession = false, betweenSessions = false;
+  for (let i = 0; i < info.sessions.length; i++) {
+    const [start, end] = info.sessions[i];
+    if (hm >= start && hm <= end) { inSession = true; break; }
+    // 在两段交易时段之间的午休
+    if (i > 0 && hm > info.sessions[i - 1][1] && hm < start) { betweenSessions = true; }
+  }
+
+  if (inSession) return { status: 'open', label: '交易中' };
+  if (betweenSessions) return { status: 'break', label: '午休' };
+
+  const firstStart = info.sessions[0][0];
+  const lastEnd = info.sessions[info.sessions.length - 1][1];
+  if (hm < firstStart) return { status: 'pre', label: '未开盘' };
+  return { status: 'closed', label: '已收盘' };
 }
 
 // 带超时的fetch封装
@@ -196,11 +262,24 @@ async function fetchYahooBatch(symbols: string[], apiBase: string): Promise<Map<
   return map;
 }
 
+export interface HoldingDetail {
+  name: string;
+  code: string;
+  market: string;
+  weight: number;
+  price: number | null;
+  changePct: number | null;
+  contribution: number | null; // 该持仓对基金涨跌幅的贡献（百分比）
+  status: string;
+  statusLabel: string;
+}
+
 export interface FundUpdate {
   id: number;
   fund_name: string;
   fund_code: string;
   holdings: string;
+  holdings_detail: string;
   estimated_change: number;
   estimated_time: string;
 }
@@ -256,7 +335,7 @@ export async function refreshValuations(
         continue;
       }
 
-      // Yahoo Finance（美/韩/台）
+      // Yahoo Finance（美/韩/台/日）
       const ySymbol = toYahooSymbol(normalizedCode, h.market);
       if (ySymbol) {
         yahooLookup.push({ symbol: ySymbol, fundId: fund.id, holding: h });
@@ -292,7 +371,8 @@ export async function refreshValuations(
   }
 
   // 计算每个基金的加权涨跌幅
-  const now = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  const nowDate = new Date();
+  const now = nowDate.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
   const updated: FundUpdate[] = [];
   let totalHoldings = 0;
   let matchedHoldings = 0;
@@ -310,7 +390,7 @@ export async function refreshValuations(
 
     let totalWeight = 0;
     let weightedChange = 0;
-    let fundMatched = 0;
+    const details: HoldingDetail[] = [];
 
     for (const h of holdings) {
       if (!h.name || !h.code || !h.market) continue;
@@ -318,22 +398,47 @@ export async function refreshValuations(
       const w = Number(h.weight) || 0;
       totalWeight += w;
       const { changePct, price } = getPrice(h);
+      const mStatus = getMarketStatus(h.market, nowDate);
+
+      let contribution: number | null = null;
       if (changePct !== null) {
         weightedChange += w * changePct;
-        fundMatched++;
         matchedHoldings++;
+        contribution = w * changePct;
       }
+
+      details.push({
+        name: h.name,
+        code: h.code,
+        market: h.market,
+        weight: w,
+        price,
+        changePct,
+        contribution,
+        status: mStatus.status,
+        statusLabel: mStatus.label,
+      });
     }
 
     const estimatedChange = totalWeight > 0
       ? Math.round((weightedChange / totalWeight) * 10000) / 10000
       : 0;
 
+    // 同时规范化 contribution 单位为百分比（保留4位小数）
+    for (const d of details) {
+      if (d.contribution !== null && totalWeight > 0) {
+        d.contribution = Math.round((d.contribution / totalWeight) * 10000) / 10000;
+      }
+    }
+
+    const holdingsDetail = JSON.stringify(details);
+
     try {
       await updateFund(fund.id, {
         estimated_change: estimatedChange,
         estimated_time: now,
         updated_at: now,
+        holdings_detail: holdingsDetail,
       });
     } catch (e) {
       console.error(`Failed to update fund ${fund.id}:`, e);
@@ -346,6 +451,7 @@ export async function refreshValuations(
       fund_name: fund.fund_name,
       fund_code: fund.fund_code,
       holdings: fund.holdings,
+      holdings_detail: holdingsDetail,
       estimated_change: estimatedChange,
       estimated_time: now,
     });

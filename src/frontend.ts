@@ -98,26 +98,27 @@ input, select, button { font-family: inherit; }
   border-bottom: 1px solid var(--border);
   padding: 14px 24px;
   position: sticky; top: 0; z-index: 100;
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 16px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   transition: background 0.3s, border-color 0.3s;
 }
 .token-bar .logo { font-size: 20px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .token-bar .logo span { font-size: 22px; }
-.token-bar .token-group { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 260px; }
+.token-bar .token-group { display: flex; align-items: center; gap: 8px; flex: 1; }
 .token-bar .token-group input {
   flex: 1; padding: 9px 14px; border: 1px solid var(--border); border-radius: 8px;
   font-size: 14px; outline: none; transition: border-color 0.2s, background 0.3s; background: var(--input-bg); color: var(--text);
+  min-width: 0;
 }
 .token-bar .token-group input:focus { border-color: var(--primary); }
 .token-bar .token-group .btn-verify {
-  padding: 9px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
-  cursor: pointer; background: var(--primary); color: #fff; transition: background 0.2s, opacity 0.2s; white-space: nowrap;
+  padding: 9px 28px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
+  cursor: pointer; background: var(--primary); color: #fff; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0;
 }
 .token-bar .token-group .btn-verify:hover:not(:disabled) { background: var(--primary-hover); }
 .token-bar .token-group .btn-verify:disabled { opacity: 0.6; cursor: not-allowed; }
-.token-status { font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 20px; background: var(--tag-bg); transition: background 0.3s; }
+.token-status { font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 20px; background: var(--tag-bg); transition: background 0.3s; flex-shrink: 0; }
 .token-status.ok { background: var(--success-bg); color: var(--success-text); }
 .token-status.err { background: var(--error-bg); color: var(--danger); }
 .token-status.loading { background: var(--loading-bg); color: var(--primary); }
@@ -198,6 +199,7 @@ input, select, button { font-family: inherit; }
 .holdings-preview { font-size: 13px; color: var(--text-secondary); line-height: 1.6; flex: 1; min-width: 0; }
 .holdings-preview .stock-tag { display: inline-block; background: var(--tag-bg); padding: 2px 8px; border-radius: 4px; margin: 2px 3px; font-size: 12px; transition: background 0.3s; }
 .fund-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.btn-detail { flex-shrink: 0; }
 
 /* ─── 模态框 ─── */
 .modal-overlay {
@@ -259,13 +261,55 @@ input, select, button { font-family: inherit; }
 .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
 .confirm-actions .btn { padding: 8px 20px; min-width: 70px; justify-content: center; }
 
+/* ─── 模态框标题行（含右侧操作按钮） ─── */
+.modal-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; }
+.modal-header-row h2 { margin: 0; }
+
+/* ─── 自动导入模态框 ─── */
+.import-textarea {
+  width: 100%; min-height: 260px; padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 13px; line-height: 1.5;
+  resize: vertical; outline: none; transition: border-color 0.2s, background 0.3s; background: var(--input-bg); color: var(--text);
+  white-space: pre; overflow-x: auto;
+}
+.import-textarea:focus { border-color: var(--primary); background: var(--card); }
+.template-box {
+  background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 12px; line-height: 1.55;
+  color: var(--text-secondary); white-space: pre; overflow-x: auto; max-height: 240px; overflow-y: auto;
+  transition: background 0.3s, border-color 0.3s;
+}
+.template-box .t-key { color: var(--primary); }
+.template-box .t-str { color: var(--success-text); }
+.template-box .t-num { color: var(--danger); }
+.market-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+.market-legend span { background: var(--tag-bg); padding: 2px 8px; border-radius: 4px; transition: background 0.3s; }
+
+/* ─── 估值详情模态框 ─── */
+.detail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.detail-table th, .detail-table td { padding: 9px 8px; text-align: left; border-bottom: 1px solid var(--border); transition: border-color 0.3s; }
+.detail-table th { font-weight: 600; color: var(--text-secondary); font-size: 12px; white-space: nowrap; }
+.detail-table td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.detail-table tr:last-child td { border-bottom: none; }
+.status-tag { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.status-tag.open { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
+.status-tag.closed { background: var(--tag-bg); color: var(--text-muted); }
+.status-tag.pre { background: var(--loading-bg); color: var(--primary); border: 1px solid var(--loading-border); }
+.status-tag.break { background: var(--loading-bg); color: var(--primary); border: 1px solid var(--loading-border); }
+.status-tag.weekend { background: var(--error-bg); color: var(--danger); border: 1px solid var(--error-border); }
+.status-tag.unknown { background: var(--tag-bg); color: var(--text-muted); }
+.market-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; background: var(--primary-light); color: var(--primary); margin-left: 4px; transition: background 0.3s; }
+.change-up { color: var(--up); }
+.change-down { color: var(--down); }
+.change-flat { color: var(--text-muted); }
+
 /* ─── 响应式 ─── */
 @media (max-width: 640px) {
   .token-bar { padding: 12px 16px; gap: 8px; }
   .token-bar .logo { font-size: 17px; }
   .token-bar .token-group { min-width: 0; }
   .token-status { width: 100%; text-align: center; }
-  .token-bar .token-group input { font-size: 13px; padding: 8px 10px; max-width: 160px; }
+  .token-bar .token-group input { font-size: 13px; padding: 8px 10px; }
   .token-bar .token-group .btn-verify { padding: 8px 14px; font-size: 13px; }
   .container { padding: 16px 12px 40px; }
   .header h1 { font-size: 20px; }
@@ -289,8 +333,8 @@ input, select, button { font-family: inherit; }
 }
 
 @media (max-width: 400px) {
-  .token-bar .token-group { flex-direction: column; width: 100%; }
-  .token-bar .token-group .btn-verify { width: 100%; }
+  .token-bar { flex-wrap: wrap; }
+  .token-bar .token-group { width: 100%; }
 }
 </style>
 </head>
@@ -339,7 +383,10 @@ input, select, button { font-family: inherit; }
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <button class="modal-close" id="modalCloseBtn">✕</button>
-    <h2 id="modalTitle">新增基金</h2>
+    <div class="modal-header-row">
+      <h2 id="modalTitle">新增基金</h2>
+      <button class="btn btn-outline btn-sm" id="gotoImportBtn" style="display:none">📥 自动导入</button>
+    </div>
     <div class="form-group">
       <label>基金名称 <span class="error-text" id="nameError" style="display:inline;margin-left:8px;font-weight:400;"></span></label>
       <input type="text" id="fundNameInput" placeholder="如：华夏沪深300ETF" spellcheck="false">
@@ -363,10 +410,45 @@ input, select, button { font-family: inherit; }
   </div>
 </div>
 
+<!-- 自动导入模态框 -->
+<div class="modal-overlay" id="importOverlay">
+  <div class="modal">
+    <button class="modal-close" id="importCloseBtn">✕</button>
+    <h2>📥 自动导入基金</h2>
+    <div class="form-group">
+      <label>JSON 数据 <span style="font-weight:400;color:var(--text-muted)">（最外层为数组，支持一次导入多个基金）</span></label>
+      <textarea class="import-textarea" id="importTextarea" placeholder='粘贴 JSON 列表，例如：&#10;[&#10;  { "fund_name": "华夏沪深300ETF", "fund_code": "510300", "holdings": [...] }&#10;]' spellcheck="false"></textarea>
+    </div>
+    <div class="form-group">
+      <label>模板示例 <span style="font-weight:400;color:var(--text-muted)">（点击下方按钮填入输入框）</span></label>
+      <div class="template-box" id="templateBox"></div>
+      <div class="market-legend">
+        <span>A=A股</span><span>HK=港股</span><span>US=美股</span>
+        <span>KR=韩国</span><span>TW=台湾</span><span>JP=日本</span>
+      </div>
+      <button class="btn btn-outline btn-sm" id="fillTemplateBtn" style="margin-top:10px">填入模板</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="importCancelBtn">取消</button>
+      <button class="btn btn-primary" id="importSubmitBtn">导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 估值详情模态框 -->
+<div class="modal-overlay" id="detailOverlay">
+  <div class="modal">
+    <button class="modal-close" id="detailCloseBtn">✕</button>
+    <h2 id="detailTitle">估值详情</h2>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
 <script>
 let token = localStorage.getItem('fv_token') || '';
 let editingId = null;
 let confirmResolve = null;
+let fundsCache = [];
 
 const $ = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
@@ -380,6 +462,10 @@ const fundNameInput = $('fundNameInput'), fundCodeInput = $('fundCodeInput');
 const nameError = $('nameError'), holdingsError = $('holdingsError');
 const holdingsList = $('holdingsList'), addHoldingBtn = $('addHoldingBtn');
 const modalSaveBtn = $('modalSaveBtn'), modalCancelBtn = $('modalCancelBtn'), modalCloseBtn = $('modalCloseBtn');
+const gotoImportBtn = $('gotoImportBtn');
+const importOverlay = $('importOverlay'), importTextarea = $('importTextarea'), templateBox = $('templateBox');
+const fillTemplateBtn = $('fillTemplateBtn'), importSubmitBtn = $('importSubmitBtn'), importCancelBtn = $('importCancelBtn'), importCloseBtn = $('importCloseBtn');
+const detailOverlay = $('detailOverlay'), detailTitle = $('detailTitle'), detailBody = $('detailBody'), detailCloseBtn = $('detailCloseBtn');
 const toastContainer = $('toastContainer');
 const confirmOverlay = $('confirmOverlay'), confirmTitle = $('confirmTitle'), confirmMsg = $('confirmMsg');
 const confirmOk = $('confirmOk'), confirmCancel = $('confirmCancel');
@@ -434,6 +520,14 @@ modalCloseBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 addHoldingBtn.addEventListener('click', () => addHoldingRow());
 modalSaveBtn.addEventListener('click', saveFund);
+gotoImportBtn.addEventListener('click', () => { closeModal(); openImportModal(); });
+importCancelBtn.addEventListener('click', closeImportModal);
+importCloseBtn.addEventListener('click', closeImportModal);
+importOverlay.addEventListener('click', e => { if (e.target === importOverlay) closeImportModal(); });
+fillTemplateBtn.addEventListener('click', () => { importTextarea.value = IMPORT_TEMPLATE_RAW; });
+importSubmitBtn.addEventListener('click', submitImport);
+detailCloseBtn.addEventListener('click', () => detailOverlay.classList.remove('show'));
+detailOverlay.addEventListener('click', e => { if (e.target === detailOverlay) detailOverlay.classList.remove('show'); });
 
 async function verifyToken() {
   token = tokenInput.value.trim();
@@ -446,7 +540,6 @@ async function verifyToken() {
       localStorage.setItem('fv_token', token);
       setTokenStatus('✓ 已授权', 'ok');
       mainContent.classList.add('active');
-      toast('验证成功，系统已解锁', 'success');
       loadFunds();
     } else if (res.status === 401) {
       setTokenStatus('✗ 令牌无效', 'err');
@@ -514,6 +607,7 @@ async function loadFunds() {
 }
 
 function renderFunds(funds) {
+  fundsCache = funds || [];
   if (!funds || !funds.length) {
     fundList.innerHTML = '<div class="empty-state"><div class="icon">📂</div><p>还没有添加任何基金</p><div class="sub">点击右上角「新增基金」开始</div></div>';
     return;
@@ -545,13 +639,15 @@ function renderFunds(funds) {
     html += '<div class="fund-change-wrap"><div class="fund-change ' + changeClass + '">' + changeText + '</div>';
     if (f.estimated_time) html += '<div class="fund-time">' + esc(f.estimated_time) + '</div>';
     html += '</div></div>';
-    if (preview) { html += '<div class="fund-divider"></div><div class="fund-bottom"><div class="holdings-preview">' + preview + '</div>'; }
+    html += '<div class="fund-divider"></div>';
+    html += '<div class="fund-bottom">';
+    html += '<button class="btn btn-outline btn-sm btn-detail" onclick="openDetailModal(' + f.id + ')">📊 估值详情</button>';
+    if (preview) html += '<div class="holdings-preview">' + preview + '</div>';
     html += '<div class="fund-actions">';
     html += '<button class="btn btn-outline btn-sm" onclick="openModal(' + f.id + ')">编辑</button>';
     html += '<button class="btn btn-danger btn-sm" onclick="deleteFund(' + f.id + ')">删除</button>';
     html += '</div>';
-    if (preview) html += '</div>';
-    html += '</div>';
+    html += '</div></div>';
   }
   fundList.innerHTML = html;
 }
@@ -598,6 +694,8 @@ async function deleteFund(id) {
 async function openModal(id) {
   editingId = id || null;
   modalTitle.textContent = id ? '编辑基金' : '新增基金';
+  // 自动导入入口仅在「新增基金」时显示
+  gotoImportBtn.style.display = id ? 'none' : '';
   fundNameInput.value = ''; fundCodeInput.value = '';
   holdingsList.innerHTML = '';
   nameError.textContent = ''; holdingsError.textContent = ''; holdingsError.classList.remove('show');
@@ -643,6 +741,7 @@ function addHoldingRow(name, code, market, weight) {
       '<option value="US"' + (market==='US'?' selected':'') + '>美股</option>' +
       '<option value="KR"' + (market==='KR'?' selected':'') + '>韩国</option>' +
       '<option value="TW"' + (market==='TW'?' selected':'') + '>台湾</option>' +
+      '<option value="JP"' + (market==='JP'?' selected':'') + '>日本</option>' +
     '</select>' +
     '<input class="h-weight" type="number" placeholder="%" value="' + (weight||'') + '" step="0.01">' +
     '<button class="btn-remove" onclick="this.parentElement.remove()">✕</button>';
@@ -697,6 +796,122 @@ async function saveFund() {
     if (e.message === 'UNAUTHORIZED') return;
     toast('保存失败：' + e.message, 'error');
   } finally { setLoading(modalSaveBtn, false); }
+}
+
+// ─── 自动导入 ───
+const IMPORT_TEMPLATE = [
+  {
+    fund_name: "华夏沪深300ETF",
+    fund_code: "510300",
+    holdings: [
+      { name: "贵州茅台", code: "600519", market: "A", weight: 5.23 },
+      { name: "宁德时代", code: "300750", market: "A", weight: 2.10 },
+      { name: "腾讯控股", code: "700", market: "HK", weight: 8.10 },
+      { name: "苹果", code: "AAPL", market: "US", weight: 4.50 },
+      { name: "三星电子", code: "005930", market: "KR", weight: 6.80 },
+      { name: "台积电", code: "2330", market: "TW", weight: 10.20 },
+      { name: "丰田汽车", code: "7203", market: "JP", weight: 2.30 }
+    ]
+  },
+  {
+    fund_name: "科技主题基金",
+    fund_code: "",
+    holdings: [
+      { name: "美团", code: "3690", market: "HK", weight: 7.50 },
+      { name: "微软", code: "MSFT", market: "US", weight: 9.20 }
+    ]
+  }
+];
+const IMPORT_TEMPLATE_RAW = JSON.stringify(IMPORT_TEMPLATE, null, 2);
+
+function openImportModal() {
+  importTextarea.value = '';
+  templateBox.textContent = IMPORT_TEMPLATE_RAW;
+  importOverlay.classList.add('show');
+}
+
+function closeImportModal() {
+  importOverlay.classList.remove('show');
+}
+
+async function submitImport() {
+  const raw = importTextarea.value.trim();
+  if (!raw) { toast('请输入 JSON 数据', 'error'); return; }
+  let data;
+  try { data = JSON.parse(raw); }
+  catch (e) { toast('JSON 格式错误：' + e.message, 'error'); return; }
+  if (!Array.isArray(data)) { toast('最外层必须是数组', 'error'); return; }
+
+  setLoading(importSubmitBtn, true, '导入中…');
+  try {
+    const result = await api('/api/funds/batch', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    const ok = result.success || 0, fail = result.failed || 0;
+    if (fail === 0) {
+      toast('成功导入 ' + ok + ' 只基金', 'success');
+    } else if (ok > 0) {
+      toast('导入完成：成功 ' + ok + '，失败 ' + fail, 'info');
+    } else {
+      toast('导入失败：' + (result.errors?.[0]?.error || '未知错误'), 'error');
+    }
+    closeImportModal();
+    loadFunds();
+  } catch (e) {
+    if (e.message === 'UNAUTHORIZED') return;
+    toast('导入失败：' + e.message, 'error');
+  } finally { setLoading(importSubmitBtn, false); }
+}
+
+// ─── 估值详情 ───
+const MARKET_LABELS = { A: 'A股', HK: '港股', US: '美股', KR: '韩国', TW: '台湾', JP: '日本' };
+
+function openDetailModal(id) {
+  const fund = fundsCache.find(f => f.id === id);
+  if (!fund) { toast('基金数据不存在', 'error'); return; }
+  detailTitle.textContent = '估值详情 - ' + fund.fund_name;
+
+  let details = [];
+  try { details = JSON.parse(fund.holdings_detail || '[]'); } catch {}
+  if (!Array.isArray(details) || details.length === 0) {
+    detailBody.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>暂无估值详情</p><div class="sub">请先点击「刷新估值」获取行情数据</div></div>';
+    detailOverlay.classList.add('show');
+    return;
+  }
+
+  let html = '<table class="detail-table"><thead><tr>';
+  html += '<th>持仓</th><th>市场</th><th class="num">权重</th><th class="num">现价</th><th class="num">涨跌幅</th><th class="num">贡献</th><th>交易所状态</th>';
+  html += '</tr></thead><tbody>';
+
+  for (const d of details) {
+    const cp = d.changePct;
+    const changeClass = (cp == null) ? 'change-flat' : (cp > 0.01 ? 'change-up' : cp < -0.01 ? 'change-down' : 'change-flat');
+    const changeText = (cp == null) ? '—' : ((cp > 0 ? '+' : '') + Number(cp).toFixed(2) + '%');
+    const contribText = (d.contribution == null) ? '—' : ((d.contribution > 0 ? '+' : '') + Number(d.contribution).toFixed(2) + '%');
+    const priceText = (d.price == null) ? '—' : Number(d.price).toFixed(2);
+    const statusCls = d.status || 'unknown';
+    const marketLabel = MARKET_LABELS[d.market] || d.market || '—';
+
+    html += '<tr>';
+    html += '<td><div style="font-weight:500">' + esc(d.name) + '</div><div class="fund-code-text">' + esc(d.code) + '</div></td>';
+    html += '<td>' + esc(marketLabel) + '</td>';
+    html += '<td class="num">' + (d.weight || 0) + '%</td>';
+    html += '<td class="num">' + priceText + '</td>';
+    html += '<td class="num ' + changeClass + '">' + changeText + '</td>';
+    html += '<td class="num ' + changeClass + '">' + contribText + '</td>';
+    html += '<td><span class="status-tag ' + statusCls + '">' + esc(d.statusLabel || '未知') + '</span></td>';
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+
+  if (fund.estimated_time) {
+    html += '<div class="fund-time" style="margin-top:12px;text-align:right">数据时间：' + esc(fund.estimated_time) + '</div>';
+  }
+
+  detailBody.innerHTML = html;
+  detailOverlay.classList.add('show');
 }
 </script>
 </body>

@@ -45,11 +45,18 @@ async function ensureTable(token: string): Promise<boolean> {
       fund_name TEXT NOT NULL,
       fund_code TEXT DEFAULT '',
       holdings TEXT NOT NULL DEFAULT '[]',
+      holdings_detail TEXT NOT NULL DEFAULT '[]',
       estimated_change REAL DEFAULT 0,
       estimated_time TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now','localtime')),
       updated_at TEXT DEFAULT (datetime('now','localtime'))
     )`);
+    // 兼容已存在的旧表：尝试添加 holdings_detail 字段（已存在则忽略错误）
+    try {
+      await db.query(`ALTER TABLE stock_fund_holdings ADD COLUMN holdings_detail TEXT NOT NULL DEFAULT '[]'`);
+    } catch {
+      // 字段已存在，忽略
+    }
     tableReady = true;
     return true;
   } catch (e) {
@@ -76,7 +83,7 @@ function validateHoldings(holdings: string): string | null {
       if (!item.name || !item.code || !item.market) {
         return '每条持仓必须包含name、code、market字段';
       }
-      if (!['A', 'HK', 'US', 'KR', 'TW'].includes(item.market)) {
+      if (!['A', 'HK', 'US', 'KR', 'TW', 'JP'].includes(item.market)) {
         return `不支持的市场: ${item.market}`;
       }
     }
@@ -180,6 +187,67 @@ app.post('/api/funds', async (c) => {
   } catch (e) {
     return errorResponse(c, e, '创建失败');
   }
+});
+
+// 批量导入基金
+app.post('/api/funds/batch', async (c) => {
+  await ensureTable(c.var.token);
+  const db = createDb(c.var.token);
+
+  let body: any;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: '请求体必须是有效的JSON' }, 400);
+  }
+
+  if (!Array.isArray(body)) {
+    return c.json({ error: '请求体必须是JSON数组' }, 400);
+  }
+
+  if (body.length === 0) {
+    return c.json({ error: '数组不能为空' }, 400);
+  }
+
+  const results: any[] = [];
+  const errors: { index: number; error: string }[] = [];
+
+  for (let i = 0; i < body.length; i++) {
+    const item = body[i];
+    if (!item || typeof item !== 'object') {
+      errors.push({ index: i, error: '条目必须是对象' });
+      continue;
+    }
+    if (!item.fund_name?.trim()) {
+      errors.push({ index: i, error: '基金名称不能为空' });
+      continue;
+    }
+    const holdings = typeof item.holdings === 'string' ? item.holdings : JSON.stringify(item.holdings || []);
+    const validationError = validateHoldings(holdings);
+    if (validationError) {
+      errors.push({ index: i, error: validationError });
+      continue;
+    }
+    try {
+      const result = await db.create({
+        fund_name: item.fund_name.trim(),
+        fund_code: (item.fund_code || '').trim(),
+        holdings,
+        created_at: localtimeNow(),
+        updated_at: localtimeNow(),
+      });
+      results.push(result);
+    } catch (e) {
+      errors.push({ index: i, error: e instanceof Error ? e.message : '创建失败' });
+    }
+  }
+
+  return c.json({
+    success: results.length,
+    failed: errors.length,
+    results,
+    errors,
+  }, results.length > 0 ? 201 : 400);
 });
 
 // 更新基金
