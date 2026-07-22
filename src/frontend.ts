@@ -878,7 +878,7 @@ const MARKET_LABELS = { A: 'A股', HK: '港股', US: '美股', KR: '韩国', TW:
 function openDetailModal(id) {
   const fund = fundsCache.find(f => f.id === id);
   if (!fund) { toast('基金数据不存在', 'error'); return; }
-  detailTitle.textContent = '估值详情 - ' + fund.fund_name;
+  detailTitle.textContent = fund.fund_name;
 
   let details = [];
   try { details = JSON.parse(fund.holdings_detail || '[]'); } catch {}
