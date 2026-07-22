@@ -19,6 +19,15 @@ interface FundBody {
   holdings?: string;
 }
 
+// favicon SVG（简约现代风格：深色背景 + 绿色上升折线，体现金融/基金估值主题）
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#0f172a"/>
+  <rect x="5" y="5" width="22" height="22" rx="4" fill="none" stroke="#4f46e5" stroke-width="1.5" opacity="0.25"/>
+  <path d="M7 22 L12 16 L16 19 L22 10" fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="22" cy="10" r="1.8" fill="#22c55e"/>
+  <rect x="6" y="24" width="20" height="1.5" rx="0.75" fill="#4f46e5" opacity="0.4"/>
+</svg>`;
+
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 // 统一错误响应
@@ -123,6 +132,16 @@ app.get('/', async (c) => {
     </body></html>`);
   }
   return c.html(renderFrontend());
+});
+
+// favicon
+app.get('/favicon.svg', async (c) => {
+  return new Response(FAVICON_SVG, {
+    headers: {
+      'Content-Type': 'image/svg+xml',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
 });
 
 // 验证令牌

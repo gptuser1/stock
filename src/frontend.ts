@@ -5,6 +5,7 @@ export function renderFrontend(): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>基金估值助手</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 :root {
   --bg: #f0f2f5;
@@ -888,7 +889,7 @@ function openDetailModal(id) {
   }
 
   let html = '<table class="detail-table"><thead><tr>';
-  html += '<th>持仓</th><th>市场</th><th class="num">权重</th><th class="num">现价</th><th class="num">涨跌幅</th><th class="num">贡献</th><th>交易所状态</th>';
+  html += '<th>持仓</th><th>市场</th><th class="num">权重</th><th class="num">涨跌幅</th><th class="num">贡献</th><th>交易所状态</th>';
   html += '</tr></thead><tbody>';
 
   for (const d of details) {
@@ -896,7 +897,6 @@ function openDetailModal(id) {
     const changeClass = (cp == null) ? 'change-flat' : (cp > 0.01 ? 'change-up' : cp < -0.01 ? 'change-down' : 'change-flat');
     const changeText = (cp == null) ? '—' : ((cp > 0 ? '+' : '') + Number(cp).toFixed(2) + '%');
     const contribText = (d.contribution == null) ? '—' : ((d.contribution > 0 ? '+' : '') + Number(d.contribution).toFixed(2) + '%');
-    const priceText = (d.price == null) ? '—' : Number(d.price).toFixed(2);
     const statusCls = d.status || 'unknown';
     const marketLabel = MARKET_LABELS[d.market] || d.market || '—';
 
@@ -904,7 +904,6 @@ function openDetailModal(id) {
     html += '<td><div style="font-weight:500">' + esc(d.name) + '</div><div class="fund-code-text">' + esc(d.code) + '</div></td>';
     html += '<td>' + esc(marketLabel) + '</td>';
     html += '<td class="num">' + (d.weight || 0) + '%</td>';
-    html += '<td class="num">' + priceText + '</td>';
     html += '<td class="num ' + changeClass + '">' + changeText + '</td>';
     html += '<td class="num ' + changeClass + '">' + contribText + '</td>';
     html += '<td><span class="status-tag ' + statusCls + '">' + esc(d.statusLabel || '未知') + '</span></td>';
