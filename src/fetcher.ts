@@ -26,6 +26,8 @@ interface YahooQuoteResponse {
 interface YahooChartMeta {
   regularMarketPrice: number | null;
   regularMarketChangePercent: number | null;
+  previousClose?: number | null;
+  chartPreviousClose?: number | null;
 }
 
 interface YahooChartResponse {
@@ -248,9 +250,17 @@ async function fetchYahooBatch(symbols: string[], apiBase: string): Promise<Map<
         const data: YahooChartResponse = await res.json();
         const meta = data?.chart?.result?.[0]?.meta;
         if (meta?.regularMarketPrice != null) {
+          let changePct = meta.regularMarketChangePercent ?? null;
+          // Yahoo 不再返回 changePercent 时用前收价计算
+          if (changePct == null) {
+            const prev = meta.chartPreviousClose ?? meta.previousClose ?? null;
+            if (prev && prev !== 0) {
+              changePct = Math.round(((meta.regularMarketPrice - prev) / prev) * 10000) / 100;
+            }
+          }
           map.set(symbol, {
             price: meta.regularMarketPrice,
-            changePct: meta.regularMarketChangePercent ?? null,
+            changePct,
           });
         }
       } catch (e) {

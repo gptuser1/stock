@@ -699,6 +699,10 @@ async function openModal(id) {
   holdingsList.innerHTML = '';
   nameError.textContent = ''; holdingsError.textContent = ''; holdingsError.classList.remove('show');
   fundNameInput.classList.remove('field-error');
+  // 重置保存按钮为初始状态
+  modalSaveBtn.disabled = false;
+  modalSaveBtn.textContent = '保存';
+  modalSaveBtn._origText = '保存';
 
   if (id) {
     setLoading(modalSaveBtn, true, '加载中…');
@@ -723,6 +727,9 @@ async function openModal(id) {
 function closeModal() {
   modalOverlay.classList.remove('show');
   nameError.textContent = ''; holdingsError.textContent = ''; holdingsError.classList.remove('show');
+  modalSaveBtn.disabled = false;
+  modalSaveBtn.textContent = '保存';
+  modalSaveBtn._origText = '保存';
   fundNameInput.classList.remove('field-error');
   editingId = null;
 }
