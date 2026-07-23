@@ -126,13 +126,22 @@ input, select, button { font-family: inherit; }
 .token-bar .token-group .btn-verify.loading { background: var(--primary); opacity: 0.75; }
 
 /* ─── 容器 ─── */
-.container { max-width: 920px; margin: 0 auto; padding: 24px 20px 60px; display: none; }
+.container { max-width: 920px; margin: 0 auto; padding: 24px 20px 72px; display: none; }
 .container.active { display: block; }
 
-/* ─── 头部 ─── */
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-.header h1 { font-size: 24px; font-weight: 700; }
-.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* ─── 底部栏 ─── */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+  background: var(--bar-bg); border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06); display: none;
+}
+.bottom-bar.active { display: block; }
+.bottom-bar-inner {
+  max-width: 920px; margin: 0 auto; padding: 10px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.bottom-bar-time { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+.bottom-bar-actions { display: flex; gap: 8px; flex-shrink: 0; }
 .btn {
   padding: 9px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
   cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; justify-content: center;
@@ -146,16 +155,6 @@ input, select, button { font-family: inherit; }
 .btn-danger:hover:not(:disabled) { background: var(--danger-hover); }
 .btn-sm { padding: 5px 12px; font-size: 12px; }
 .btn-add-row { padding: 4px 12px; font-size: 12px; }
-
-/* ─── 刷新状态 ─── */
-.refresh-status {
-  padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 20px; display: none;
-  animation: fadeIn 0.3s ease;
-}
-.refresh-status.show { display: flex; align-items: center; gap: 8px; }
-.refresh-status.success { background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success-text); }
-.refresh-status.error { background: var(--error-bg); border: 1px solid var(--error-border); color: var(--danger); }
-.refresh-status.loading { background: var(--loading-bg); border: 1px solid var(--loading-border); color: var(--primary); }
 
 /* ─── 加载骨架屏 ─── */
 .skeleton { animation: pulse 1.5s ease-in-out infinite; }
@@ -312,11 +311,10 @@ input, select, button { font-family: inherit; }
   .token-bar .token-group { min-width: 0; }
   .token-bar .token-group input { font-size: 13px; padding: 8px 10px; }
   .token-bar .token-group .btn-verify { padding: 8px 14px; font-size: 13px; min-width: 70px; }
-  .container { padding: 16px 12px 40px; }
-  .header h1 { font-size: 20px; }
-  .header { flex-direction: column; align-items: stretch; }
-  .header-actions { justify-content: stretch; }
-  .header-actions .btn { flex: 1; justify-content: center; }
+  .container { padding: 16px 12px 80px; }
+  .bottom-bar-inner { padding: 8px 12px; }
+  .bottom-bar-actions .btn { padding: 8px 14px; font-size: 13px; }
+  .bottom-bar-time { font-size: 11px; }
   .fund-card { padding: 16px; }
   .fund-card-top { flex-direction: column; gap: 8px; }
   .fund-change-wrap { text-align: left; width: 100%; display: flex; align-items: baseline; gap: 8px; }
@@ -366,15 +364,18 @@ input, select, button { font-family: inherit; }
 
 <!-- 主内容 -->
 <div class="container" id="mainContent">
-  <div class="header">
-    <div class="header-actions">
-      <button class="btn btn-outline" id="refreshBtn">🔄 刷新估值</button>
+  <div id="fundList"></div>
+</div>
+
+<!-- 底部栏 -->
+<div class="bottom-bar" id="bottomBar">
+  <div class="bottom-bar-inner">
+    <span class="bottom-bar-time" id="bottomBarTime"></span>
+    <div class="bottom-bar-actions">
+      <button class="btn btn-outline" id="refreshBtn">🔄 更新估值</button>
       <button class="btn btn-primary" id="addFundBtn">＋ 新增基金</button>
     </div>
   </div>
-
-  <div class="refresh-status" id="refreshStatus"></div>
-  <div id="fundList"></div>
 </div>
 
 <!-- 模态框 -->
@@ -455,8 +456,9 @@ const $$ = sel => document.querySelectorAll(sel);
 
 const tokenInput = $('tokenInput'), verifyBtn = $('verifyBtn');
 const mainContent = $('mainContent'), fundList = $('fundList');
-const refreshBtn = $('refreshBtn'), refreshStatus = $('refreshStatus');
+const refreshBtn = $('refreshBtn');
 const addFundBtn = $('addFundBtn');
+const bottomBar = $('bottomBar'), bottomBarTime = $('bottomBarTime');
 const modalOverlay = $('modalOverlay'), modalTitle = $('modalTitle');
 const fundNameInput = $('fundNameInput'), fundCodeInput = $('fundCodeInput');
 const nameError = $('nameError'), holdingsError = $('holdingsError');
@@ -541,11 +543,13 @@ async function verifyToken() {
       localStorage.setItem('fv_token', token);
       setBtnStatus('✓ 已授权', 'ok');
       mainContent.classList.add('active');
+      bottomBar.classList.add('active');
       loadFunds();
     } else if (res.status === 401) {
       setBtnStatus('✗ 无效', 'err');
       localStorage.removeItem('fv_token');
       mainContent.classList.remove('active');
+    bottomBar.classList.remove('active');
       toast('令牌无效，请检查后重试', 'error');
     } else {
       setBtnStatus('✗ 失败', 'err');
@@ -571,6 +575,7 @@ async function api(url, options) {
   if (res.status === 401) {
     setBtnStatus('✗ 已失效', 'err');
     mainContent.classList.remove('active');
+    bottomBar.classList.remove('active');
     localStorage.removeItem('fv_token');
     toast('令牌已失效，请重新验证', 'error');
     throw new Error('UNAUTHORIZED');
@@ -611,7 +616,8 @@ async function loadFunds() {
 function renderFunds(funds) {
   fundsCache = funds || [];
   if (!funds || !funds.length) {
-    fundList.innerHTML = '<div class="empty-state"><div class="icon">📂</div><p>还没有添加任何基金</p><div class="sub">点击右上角「新增基金」开始</div></div>';
+    fundList.innerHTML = '<div class="empty-state"><div class="icon">📂</div><p>还没有添加任何基金</p><div class="sub">点击底部「新增基金」开始</div></div>';
+    bottomBarTime.textContent = '';
     return;
   }
   let html = '';
@@ -628,7 +634,6 @@ function renderFunds(funds) {
     html += '<div class="fund-name">' + esc(f.fund_name) + (f.fund_code ? '<span class="tag">' + esc(f.fund_code) + '</span>' : '') + '</div>';
     html += '</div>';
     html += '<div class="fund-change-wrap"><div class="fund-change ' + changeClass + '">' + changeText + '</div>';
-    if (f.estimated_time) html += '<div class="fund-time">' + esc(f.estimated_time) + '</div>';
     html += '</div></div>';
     html += '<div class="fund-divider"></div>';
     html += '<div class="fund-bottom">';
@@ -639,14 +644,15 @@ function renderFunds(funds) {
     html += '</div></div>';
   }
   fundList.innerHTML = html;
+  // 更新底部栏时间：取最后一只基金的 estimated_time
+  const lastFund = funds[funds.length - 1];
+  bottomBarTime.textContent = lastFund && lastFund.estimated_time ? '更新于 ' + esc(lastFund.estimated_time) : '';
 }
 
 function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]); }
 
 async function refreshValuation() {
-  refreshStatus.className = 'refresh-status show loading';
-  refreshStatus.innerHTML = '⏳ 正在拉取各市场行情…';
-  setLoading(refreshBtn, true, '刷新中…');
+  setLoading(refreshBtn, true, '更新中…');
   try {
     const data = await api('/api/trigger', { method: 'POST' });
     const stats = data.stats || {};
@@ -654,16 +660,11 @@ async function refreshValuation() {
     const detail = stats.total_holdings
       ? '（匹配 ' + stats.match_rate + '，' + (stats.markets || {}).length + ' 个市场）'
       : '';
-    refreshStatus.className = 'refresh-status show success';
-    refreshStatus.innerHTML = '✓ 估值已更新，' + count + ' 只基金' + detail;
-    toast('估值刷新完成，' + count + ' 只基金已更新', 'success');
-    setTimeout(() => { refreshStatus.classList.remove('show'); }, 5000);
+    toast('估值已更新，' + count + ' 只基金' + detail, 'success');
     loadFunds();
   } catch (e) {
     if (e.message === 'UNAUTHORIZED') return;
-    refreshStatus.className = 'refresh-status show error';
-    refreshStatus.innerHTML = '✗ 刷新失败：' + e.message;
-    toast('估值刷新失败：' + e.message, 'error');
+    toast('估值更新失败：' + e.message, 'error');
   } finally { setLoading(refreshBtn, false); }
 }
 
@@ -908,7 +909,7 @@ function openDetailModal(id) {
   let details = [];
   try { details = JSON.parse(fund.holdings_detail || '[]'); } catch {}
   if (!Array.isArray(details) || details.length === 0) {
-    detailBody.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>暂无估值详情</p><div class="sub">请先点击「刷新估值」获取行情数据</div></div>';
+    detailBody.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>暂无估值详情</p><div class="sub">请先点击底部「更新估值」获取行情数据</div></div>';
     detailOverlay.classList.add('show');
     return;
   }
