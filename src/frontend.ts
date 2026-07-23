@@ -368,7 +368,6 @@ input, select, button { font-family: inherit; }
 <!-- 主内容 -->
 <div class="container" id="mainContent">
   <div class="header">
-    <h1>基金持仓估值</h1>
     <div class="header-actions">
       <button class="btn btn-outline" id="refreshBtn">🔄 刷新估值</button>
       <button class="btn btn-primary" id="addFundBtn">＋ 新增基金</button>
@@ -620,21 +619,10 @@ function renderFunds(funds) {
       changeClass = change > 0.01 ? 'up' : change < -0.01 ? 'down' : 'flat';
       changeText = (change > 0 ? '+' : '') + change.toFixed(2) + '%';
     }
-    let holdings = [];
-    try { holdings = JSON.parse(f.holdings || '[]'); } catch {}
-    let preview = '';
-    if (holdings.length) {
-      preview = holdings.slice(0, 6).map(h =>
-        '<span class="stock-tag">' + esc(h.name || '') + ' ' + (h.weight || 0) + '%</span>'
-      ).join('');
-      if (holdings.length > 6) preview += '<span class="stock-tag" style="background:transparent;color:var(--text-muted)">+' + (holdings.length - 6) + '</span>';
-    }
-
     html += '<div class="fund-card">';
     html += '<div class="fund-card-top">';
     html += '<div class="fund-info">';
     html += '<div class="fund-name">' + esc(f.fund_name) + (f.fund_code ? '<span class="tag">' + esc(f.fund_code) + '</span>' : '') + '</div>';
-    if (f.fund_code) html += '<div class="fund-code-text">' + esc(f.fund_code) + '</div>';
     html += '</div>';
     html += '<div class="fund-change-wrap"><div class="fund-change ' + changeClass + '">' + changeText + '</div>';
     if (f.estimated_time) html += '<div class="fund-time">' + esc(f.estimated_time) + '</div>';
@@ -642,7 +630,6 @@ function renderFunds(funds) {
     html += '<div class="fund-divider"></div>';
     html += '<div class="fund-bottom">';
     html += '<button class="btn btn-outline btn-sm btn-detail" onclick="openDetailModal(' + f.id + ')">📊 估值详情</button>';
-    if (preview) html += '<div class="holdings-preview">' + preview + '</div>';
     html += '<div class="fund-actions">';
     html += '<button class="btn btn-outline btn-sm" onclick="openModal(' + f.id + ')">编辑</button>';
     html += '<button class="btn btn-danger btn-sm" onclick="deleteFund(' + f.id + ')">删除</button>';
