@@ -403,6 +403,7 @@ input, select, button { font-family: inherit; }
       <div class="error-text" id="holdingsError"></div>
     </div>
     <div class="modal-actions">
+      <button class="btn btn-danger" id="modalDeleteBtn" style="margin-right:auto;display:none">删除</button>
       <button class="btn btn-outline" id="modalCancelBtn">取消</button>
       <button class="btn btn-primary" id="modalSaveBtn">保存</button>
     </div>
@@ -460,7 +461,7 @@ const modalOverlay = $('modalOverlay'), modalTitle = $('modalTitle');
 const fundNameInput = $('fundNameInput'), fundCodeInput = $('fundCodeInput');
 const nameError = $('nameError'), holdingsError = $('holdingsError');
 const holdingsList = $('holdingsList'), addHoldingBtn = $('addHoldingBtn');
-const modalSaveBtn = $('modalSaveBtn'), modalCancelBtn = $('modalCancelBtn'), modalCloseBtn = $('modalCloseBtn');
+const modalSaveBtn = $('modalSaveBtn'), modalCancelBtn = $('modalCancelBtn'), modalCloseBtn = $('modalCloseBtn'), modalDeleteBtn = $('modalDeleteBtn');
 const gotoImportBtn = $('gotoImportBtn');
 const importOverlay = $('importOverlay'), importTextarea = $('importTextarea'), templateBox = $('templateBox');
 const fillTemplateBtn = $('fillTemplateBtn'), importSubmitBtn = $('importSubmitBtn'), importCancelBtn = $('importCancelBtn'), importCloseBtn = $('importCloseBtn');
@@ -519,6 +520,7 @@ modalCloseBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 addHoldingBtn.addEventListener('click', () => addHoldingRow());
 modalSaveBtn.addEventListener('click', saveFund);
+modalDeleteBtn.addEventListener('click', () => { if (editingId) deleteFund(editingId); });
 gotoImportBtn.addEventListener('click', () => { closeModal(); openImportModal(); });
 importCancelBtn.addEventListener('click', closeImportModal);
 importCloseBtn.addEventListener('click', closeImportModal);
@@ -632,7 +634,6 @@ function renderFunds(funds) {
     html += '<button class="btn btn-outline btn-sm btn-detail" onclick="openDetailModal(' + f.id + ')">📊 估值详情</button>';
     html += '<div class="fund-actions">';
     html += '<button class="btn btn-outline btn-sm" onclick="openModal(' + f.id + ')">编辑</button>';
-    html += '<button class="btn btn-danger btn-sm" onclick="deleteFund(' + f.id + ')">删除</button>';
     html += '</div>';
     html += '</div></div>';
   }
@@ -671,6 +672,7 @@ async function deleteFund(id) {
   try {
     await api('/api/funds/' + id, { method: 'DELETE' });
     toast('删除成功', 'success');
+    closeModal();
     loadFunds();
   } catch (e) {
     if (e.message === 'UNAUTHORIZED') return;
@@ -681,8 +683,9 @@ async function deleteFund(id) {
 async function openModal(id) {
   editingId = id || null;
   modalTitle.textContent = id ? '编辑基金' : '新增基金';
-  // 自动导入入口仅在「新增基金」时显示
+  // 自动导入入口仅在「新增基金」时显示；删除按钮仅在「编辑」时显示
   gotoImportBtn.style.display = id ? 'none' : '';
+  modalDeleteBtn.style.display = id ? '' : 'none';
   fundNameInput.value = ''; fundCodeInput.value = '';
   holdingsList.innerHTML = '';
   nameError.textContent = ''; holdingsError.textContent = ''; holdingsError.classList.remove('show');
