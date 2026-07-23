@@ -321,8 +321,7 @@ input, select, button { font-family: inherit; }
   .fund-card-top { flex-direction: column; gap: 8px; }
   .fund-change-wrap { text-align: left; width: 100%; display: flex; align-items: baseline; gap: 8px; }
   .fund-change { font-size: 22px; }
-  .fund-bottom { flex-direction: column; align-items: flex-start; }
-  .fund-actions { width: 100%; justify-content: flex-end; }
+  .fund-bottom { flex-wrap: wrap; }
   .modal { padding: 20px; }
   .form-inline { gap: 6px; }
   .form-inline .h-name { flex: 100%; }
