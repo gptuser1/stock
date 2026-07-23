@@ -422,7 +422,7 @@ input, select, button { font-family: inherit; }
       <label>模板示例 <span style="font-weight:400;color:var(--text-muted)">（点击下方按钮填入输入框）</span></label>
       <div class="template-box" id="templateBox"></div>
       <div class="market-legend">
-        <span>A=A股</span><span>HK=港股</span><span>US=美股</span>
+        <span>A=内地</span><span>HK=香港</span><span>US=美国</span>
         <span>KR=韩国</span><span>TW=台湾</span><span>JP=日本</span>
       </div>
       <button class="btn btn-outline btn-sm" id="fillTemplateBtn" style="margin-top:10px">填入模板</button>
@@ -726,9 +726,9 @@ function addHoldingRow(name, code, market, weight) {
     '<input class="h-name" placeholder="名称" value="' + esc(name||'') + '" spellcheck="false">' +
     '<input class="h-code" placeholder="代码" value="' + esc(code||'') + '" spellcheck="false">' +
     '<select class="h-market">' +
-      '<option value="A"' + (market==='A'?' selected':'') + '>A股</option>' +
-      '<option value="HK"' + (market==='HK'?' selected':'') + '>港股</option>' +
-      '<option value="US"' + (market==='US'?' selected':'') + '>美股</option>' +
+      '<option value="A"' + (market==='A'?' selected':'') + '>内地</option>' +
+      '<option value="HK"' + (market==='HK'?' selected':'') + '>香港</option>' +
+      '<option value="US"' + (market==='US'?' selected':'') + '>美国</option>' +
       '<option value="KR"' + (market==='KR'?' selected':'') + '>韩国</option>' +
       '<option value="TW"' + (market==='TW'?' selected':'') + '>台湾</option>' +
       '<option value="JP"' + (market==='JP'?' selected':'') + '>日本</option>' +
@@ -856,7 +856,7 @@ async function submitImport() {
 }
 
 // ─── 估值详情 ───
-const MARKET_LABELS = { A: 'A股', HK: '港股', US: '美股', KR: '韩国', TW: '台湾', JP: '日本' };
+const MARKET_LABELS = { A: '内地', HK: '香港', US: '美国', KR: '韩国', TW: '台湾', JP: '日本' };
 
 function openDetailModal(id) {
   const fund = fundsCache.find(f => f.id === id);
