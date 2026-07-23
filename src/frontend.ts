@@ -706,20 +706,14 @@ async function openModal(id) {
   modalSaveBtn._origText = '保存';
 
   if (id) {
-    setLoading(modalSaveBtn, true, '加载中…');
-    try {
-      const data = await api('/api/funds/' + id);
-      const fund = data.results?.[0] || data;
-      if (fund) {
-        fundNameInput.value = fund.fund_name || '';
-        fundCodeInput.value = fund.fund_code || '';
-        let h = []; try { h = JSON.parse(fund.holdings || '[]'); } catch {}
-        h.forEach(x => addHoldingRow(x.name, x.code, x.market, x.weight));
-      }
-    } catch (e) {
-      if (e.message === 'UNAUTHORIZED') return;
-      toast('加载基金数据失败', 'error');
-    } finally { setLoading(modalSaveBtn, false); }
+    // 直接从已缓存的基金列表读取，避免一次额外请求
+    const fund = fundsCache.find(f => f.id === id);
+    if (fund) {
+      fundNameInput.value = fund.fund_name || '';
+      fundCodeInput.value = fund.fund_code || '';
+      let h = []; try { h = JSON.parse(fund.holdings || '[]'); } catch {}
+      h.forEach(x => addHoldingRow(x.name, x.code, x.market, x.weight));
+    }
   }
   if (!holdingsList.children.length) addHoldingRow();
   modalOverlay.classList.add('show');
