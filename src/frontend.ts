@@ -402,9 +402,10 @@ input, select, button { font-family: inherit; }
       <div class="error-text" id="holdingsError"></div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-danger" id="modalDeleteBtn" style="margin-right:auto;display:none">删除</button>
-      <button class="btn btn-outline" id="modalCancelBtn">取消</button>
       <button class="btn btn-primary" id="modalSaveBtn">保存</button>
+      <button class="btn btn-outline" id="modalExportBtn" style="display:none">导出</button>
+      <button class="btn btn-danger" id="modalDeleteBtn" style="display:none">删除</button>
+      <button class="btn btn-outline" id="modalCancelBtn">取消</button>
     </div>
   </div>
 </div>
@@ -460,7 +461,7 @@ const modalOverlay = $('modalOverlay'), modalTitle = $('modalTitle');
 const fundNameInput = $('fundNameInput'), fundCodeInput = $('fundCodeInput');
 const nameError = $('nameError'), holdingsError = $('holdingsError');
 const holdingsList = $('holdingsList'), addHoldingBtn = $('addHoldingBtn');
-const modalSaveBtn = $('modalSaveBtn'), modalCancelBtn = $('modalCancelBtn'), modalCloseBtn = $('modalCloseBtn'), modalDeleteBtn = $('modalDeleteBtn');
+const modalSaveBtn = $('modalSaveBtn'), modalCancelBtn = $('modalCancelBtn'), modalCloseBtn = $('modalCloseBtn'), modalDeleteBtn = $('modalDeleteBtn'), modalExportBtn = $('modalExportBtn');
 const gotoImportBtn = $('gotoImportBtn');
 const importOverlay = $('importOverlay'), importTextarea = $('importTextarea'), templateBox = $('templateBox');
 const fillTemplateBtn = $('fillTemplateBtn'), importSubmitBtn = $('importSubmitBtn'), importCancelBtn = $('importCancelBtn'), importCloseBtn = $('importCloseBtn');
@@ -520,6 +521,7 @@ modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) clo
 addHoldingBtn.addEventListener('click', () => addHoldingRow());
 modalSaveBtn.addEventListener('click', saveFund);
 modalDeleteBtn.addEventListener('click', () => { if (editingId) deleteFund(editingId); });
+modalExportBtn.addEventListener('click', exportFund);
 gotoImportBtn.addEventListener('click', () => { closeModal(); openImportModal(); });
 importCancelBtn.addEventListener('click', closeImportModal);
 importCloseBtn.addEventListener('click', closeImportModal);
@@ -679,12 +681,52 @@ async function deleteFund(id) {
   }
 }
 
+function copyToClipboard(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  ta.style.top = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    return true;
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
+function exportFund() {
+  const name = fundNameInput.value.trim();
+  const code = fundCodeInput.value.trim();
+  const rows = holdingsList.querySelectorAll('.form-inline');
+  const holdings = [];
+  for (const row of rows) {
+    const n = row.querySelector('.h-name').value.trim();
+    const c = row.querySelector('.h-code').value.trim();
+    const m = row.querySelector('.h-market').value;
+    const w = parseFloat(row.querySelector('.h-weight').value) || 0;
+    if (!n && !c) continue;
+    holdings.push({ name: n, code: c, market: m, weight: w });
+  }
+  const json = JSON.stringify({ fund_name: name, fund_code: code, holdings }, null, 2);
+  if (copyToClipboard(json)) {
+    toast('JSON 已复制到剪贴板', 'success');
+  } else {
+    toast('复制失败，请手动复制', 'error');
+  }
+}
+
 async function openModal(id) {
   editingId = id || null;
   modalTitle.textContent = id ? '编辑基金' : '新增基金';
   // 自动导入入口仅在「新增基金」时显示；删除按钮仅在「编辑」时显示
   gotoImportBtn.style.display = id ? 'none' : '';
   modalDeleteBtn.style.display = id ? '' : 'none';
+  modalExportBtn.style.display = id ? '' : 'none';
   fundNameInput.value = ''; fundCodeInput.value = '';
   holdingsList.innerHTML = '';
   nameError.textContent = ''; holdingsError.textContent = ''; holdingsError.classList.remove('show');
